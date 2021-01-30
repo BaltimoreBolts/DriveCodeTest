@@ -32,15 +32,19 @@ public class Robot extends TimedRobot {
   private final SendableChooser<String> m_chooser = new SendableChooser<>();
   public DifferentialDrive RobotDT;
   public Joystick JoyController;
+  public Joystick JoyControllerLeft;
   public XboxController XController;
   public Spark intakeSpark;
   private double x, y, z;
   private double xscale, yscale, zscale;
-  private boolean val;
+  public enum driveTypeEnum {
+    GTA, REG, XBOXTANK, FLIGHT, FLIGHTTANK
+  }
+  driveTypeEnum driveType ;
 
 
 
-  NetworkTableEntry tankDriveOn;
+  NetworkTableEntry chooseDriveType;
 
   /**
    * This function is run when the robot is first started up and should be
@@ -56,15 +60,19 @@ public class Robot extends TimedRobot {
     RobotDT = new DifferentialDrive(new Spark(1), new Spark(0));
     XController = new XboxController(0);
     JoyController = new Joystick(1);
+    JoyControllerLeft = new Joystick(2);
     intakeSpark = new Spark(2);
     intakeSpark.enableDeadbandElimination(true);
 
-    val = false;
     xscale = 0.7;
     yscale = 0.7;
     zscale = 0.65;
 
-    tankDriveOn = Shuffleboard.getTab("MyTab").add("TankDrive", false).withWidget("Toggle Button").getEntry();
+
+    // Change DriveType here!!!
+    driveType = driveTypeEnum.GTA;
+
+    chooseDriveType = Shuffleboard.getTab("MyTab").add("DriveType", 0).withWidget("Combo Box Chooser").getEntry();
   }
 
   /**
@@ -132,31 +140,49 @@ public class Robot extends TimedRobot {
     // x controls left / right movement of the robot
     // y controls forward / backward movement of the robot
 
-    //tankDriveOn.getBoolean(false);
+    chooseDriveType.getName();
     //if (!tankDriveOn.getBoolean(false)) {
-      if (val){
+    switch(driveType){ 
+        case GTA:
         //Xbox Controller GTA drive
-      z = XController.getX(Hand.kLeft);
-      y = (XController.getTriggerAxis(Hand.kRight) - XController.getTriggerAxis(Hand.kLeft));
+        z = XController.getX(Hand.kLeft);
+        y = (XController.getTriggerAxis(Hand.kRight) - XController.getTriggerAxis(Hand.kLeft));
   
-      RobotDT.arcadeDrive(y*yscale , z*zscale);
-    }
-    else
-    {
+        RobotDT.arcadeDrive(y*yscale , z*zscale);
+        break;
 
-      y = JoyController.getY();
-      z = JoyController.getZ();
-      RobotDT.arcadeDrive(y*yscale, z*zscale);
+        case REG:
+        //XboxController standard arcade drive - need to edit this?
+        z = XController.getX(Hand.kLeft);
+        y = XController.getY(Hand.kRight);
+        RobotDT.arcadeDrive(-y*yscale,z*zscale);
 
-      // Xbox Controller "Tank" Drive
-      /*x = XController.getY(Hand.kLeft) * 0.7;
-      y = XController.getY(Hand.kRight) * 0.7;
-      // Negative needed to 
-      RobotDT.tankDrive(-x*xscale, -y*yscale);*/
-      // XboxController standard arcade drive - need to edit this?
-      /*z = XController.getX(Hand.kLeft);
-      y = XController.getY(Hand.kRight);
-      RobotDT.arcadeDrive(-y*yscale,z*zscale);*/
+        break;
+
+        case XBOXTANK:
+
+        //XBOX controller "Tank" drive
+        x = XController.getY(Hand.kLeft);
+        y = XController.getY(Hand.kRight);
+        // Negative needed to make this move in the expected way
+        RobotDT.tankDrive(-x*xscale, -y*yscale);
+
+        break;
+
+        case FLIGHT:
+
+        y = JoyController.getY();
+        z = JoyController.getZ();
+        RobotDT.arcadeDrive(-y*yscale, z*zscale);
+        break;
+
+        case FLIGHTTANK:
+        x = JoyControllerLeft.getY();
+        y = JoyController.getY();
+        RobotDT.tankDrive(-x*xscale, -y*yscale);
+
+        break;
+
     }
       
     // This code will assign a button to make motor go CW or CCW. 

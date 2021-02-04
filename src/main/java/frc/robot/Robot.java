@@ -17,6 +17,7 @@ import edu.wpi.first.wpilibj.Spark;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.GenericHID.Hand;
+import java.lang.Math;
 
 /**
  * The VM is configured to automatically run this class, and to call the
@@ -36,9 +37,10 @@ public class Robot extends TimedRobot {
   public XboxController XController;
   public Spark intakeSpark;
   private double x, y, z;
+  private boolean flip;
   private double xscale, yscale, zscale;
   public enum driveTypeEnum {
-    GTA, REG, XBOXTANK, FLIGHT, FLIGHTTANK
+    GTA, GTAFLIP, REG, XBOXTANK, FLIGHT, FLIGHTTANK, SPLITARCADE
   }
   driveTypeEnum driveType ;
 
@@ -64,13 +66,20 @@ public class Robot extends TimedRobot {
     intakeSpark = new Spark(2);
     intakeSpark.enableDeadbandElimination(true);
 
-    xscale = 0.7;
-    yscale = 0.7;
-    zscale = 0.65;
-
+    // POWER SCALES TO LIMIT THE ROBOTS POWER
+    xscale = 0.8; // left scale/forwards backwards
+    yscale = 0.8; // right scale, keep the same as xscale
+    zscale = 0.8; // rotation scale
 
     // Change DriveType here!!!
-    driveType = driveTypeEnum.GTA;
+    // [XBOX] GTA: Left stick controls rotation, right trigger controls throttle
+    // [XBOX] GTAFLIP: Same as GTA but X button on controller flips controls
+    // [XBOX] REG: Left control stick moves robot forward/back, left/right
+    // [XBOX] XBOXTANK: Left stick moves left wheel, right stick moves right wheel
+    // [JOYSTICK] FLIGHT: Right controller moves robot forward/back, left/right
+    // [JOYSTICK] FLIGHTTANK: Left controller moves left wheel, right controller moves right wheel
+    // [JOYSTICK] SPLITARCADE: Left controller does rotation, right controller does throttle
+    driveType = driveTypeEnum.SPLITARCADE;
 
     chooseDriveType = Shuffleboard.getTab("MyTab").add("DriveType", 0).withWidget("Combo Box Chooser").getEntry();
   }
@@ -144,24 +153,37 @@ public class Robot extends TimedRobot {
     //if (!tankDriveOn.getBoolean(false)) {
     switch(driveType){ 
         case GTA:
-        //Xbox Controller GTA drive
+        // Xbox Controller GTA drive
         z = XController.getX(Hand.kLeft);
         y = (XController.getTriggerAxis(Hand.kRight) - XController.getTriggerAxis(Hand.kLeft));
   
         RobotDT.arcadeDrive(y*yscale , z*zscale);
         break;
 
+        case GTAFLIP:
+        // Xbox Controller GTA drive with X button flipping controls (front/back of robot)
+        z = XController.getX(Hand.kLeft);
+        y = (XController.getTriggerAxis(Hand.kRight) - XController.getTriggerAxis(Hand.kLeft));
+        if (XController.getXButtonPressed()) {
+          flip = !flip;
+        }
+        if (flip) {
+          RobotDT.arcadeDrive(y*yscale , z*zscale);
+        } else {
+          RobotDT.arcadeDrive(-y*yscale, z*zscale);
+        }
+        break;
+
         case REG:
-        //XboxController standard arcade drive - need to edit this?
+        // XboxController standard arcade drive - need to edit this?
         z = XController.getX(Hand.kLeft);
         y = XController.getY(Hand.kRight);
-        RobotDT.arcadeDrive(-y*yscale,z*zscale);
+        RobotDT.arcadeDrive(-y*yscale, z*zscale);
 
         break;
 
         case XBOXTANK:
-
-        //XBOX controller "Tank" drive
+        // XBOX controller "Tank" drive
         x = XController.getY(Hand.kLeft);
         y = XController.getY(Hand.kRight);
         // Negative needed to make this move in the expected way
@@ -170,7 +192,6 @@ public class Robot extends TimedRobot {
         break;
 
         case FLIGHT:
-
         y = JoyController.getY();
         z = JoyController.getZ();
         RobotDT.arcadeDrive(-y*yscale, z*zscale);
@@ -180,6 +201,30 @@ public class Robot extends TimedRobot {
         x = JoyControllerLeft.getY();
         y = JoyController.getY();
         RobotDT.tankDrive(-x*xscale, -y*yscale);
+        break;
+
+        case SPLITARCADE:
+        xscale = 1;
+        yscale = 1;
+        zscale = 1;
+        z = JoyControllerLeft.getX();
+        y = JoyController.getY();
+        double deadband = 0.1;
+        if (Math.abs(y) < deadband){
+          y = Math.abs(y)/y * deadband;
+        }
+        if (Math.abs(z) < deadband){
+          z = Math.abs(z)/z * deadband;
+        }
+
+        if (JoyController.getTriggerPressed()) {
+          flip = !flip;
+        }
+        if (flip) {
+          RobotDT.arcadeDrive(y*yscale , z*zscale);
+        } else {
+          RobotDT.arcadeDrive(-y*yscale, z*zscale);
+        }
 
         break;
 

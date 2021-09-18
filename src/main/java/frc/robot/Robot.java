@@ -79,7 +79,7 @@ public class Robot extends TimedRobot {
     // [JOYSTICK] FLIGHT: Right controller moves robot forward/back, left/right
     // [JOYSTICK] FLIGHTTANK: Left controller moves left wheel, right controller moves right wheel
     // [JOYSTICK] SPLITARCADE: Left controller does rotation, right controller does throttle
-    driveType = driveTypeEnum.SPLITARCADE;
+    driveType = driveTypeEnum.GTA;
 
     chooseDriveType = Shuffleboard.getTab("MyTab").add("DriveType", 0).withWidget("Combo Box Chooser").getEntry();
   }
